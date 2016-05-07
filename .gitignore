@@ -1,0 +1,11 @@
+# Don't track compiled python files
+*.pyc
+
+# Temporary files
+*.swp
+*.swo
+*.swn
+*.DS_Store
+*~
+
+# Don't track the following files
