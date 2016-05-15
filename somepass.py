@@ -1,5 +1,10 @@
 import itertools
+import os
+import signal
 import subprocess
+
+import psutil
+
 
 LEETTERS = {
     'a' : ['A', 'a', '4'],
@@ -29,7 +34,9 @@ LEETTERS = {
     'y' : ['Y', 'y', '7'],
     'z' : ['Z', 'z']}
 
+
 PREFIXES = ['!', '!!!', '?', '???']
+
 
 ## AxCrypt
 ## "%ProgramFiles%\Axantum\AxCrypt\AxCrypt" -k "passphrase"
@@ -47,13 +54,22 @@ PREFIXES = ['!', '!!!', '?', '???']
 ## clear cache
 ## .\AxCrypt.exe -t
 
-PTH = '"C:\Program Files\Axantum\AxCrypt\{}\"'
+PTH = '"C:\leeterhosen\\test\{}"'
 AXE = '"C:\Program Files\Axantum\AxCrypt\AxCrypt.exe"'
 ADD = AXE + ' -k '
 CLR = AXE + ' -t'
 
+
+def kill(proc_pid):
+    process = psutil.Process(proc_pid)
+    for proc in process.children(recursive=True):
+        proc.kill()
+    process.kill()
+
+
 def decrypt(filename):
     return AXE + ' -d ' + PTH.format(filename)
+
  
 def gen_words(word):
     built_list = [LEETTERS[w] for w in word]
@@ -63,3 +79,28 @@ def gen_words(word):
             yield leet
             yield leet + pre
             yield pre + leet + pre
+
+
+def do_thing(word, filename, max_cache):
+    ck = subprocess.check_output(CLR, shell=True)
+    print(ck)
+    if ck:
+        print('there is?')
+    else:
+        print('ck none')
+    cnt = 0
+    ps = input('press key')
+    for pwd in gen_words(word):
+        cnt += 1
+        print('ak')
+        ak = subprocess.check_output(ADD + pwd, shell=True)
+        print('zerps: %s - %s' % (cnt, ak))
+	#if cnt % max_cache == 0:
+    print('running...')
+    run_dec = subprocess.Popen(decrypt(filename), stdout=subprocess.PIPE, shell=True)
+    try:
+        run_dec.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        print('timed out')
+        kill(run_dec.pid)
+
