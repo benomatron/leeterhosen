@@ -1,4 +1,5 @@
 import itertools
+import subprocess
 
 LEETTERS = {
     'a' : ['A', 'a', '4'],
@@ -30,6 +31,30 @@ LEETTERS = {
 
 PREFIXES = ['!', '!!!', '?', '???']
 
+## AxCrypt
+## "%ProgramFiles%\Axantum\AxCrypt\AxCrypt" -k "passphrase"
+## "%ProgramFiles%\Axantum\AxCrypt\AxCrypt" -d "filename"
+##
+## cache pass 'dog'
+## .\AxCrypt.exe -k "dog"
+##
+## decrypt using "dog" as the password
+## .\AxCrypt.exe -k "dog" -d .\z-txt.axx
+##
+## decrypt file using pass in cache
+## .\AxCrypt.exe -d .\z-txt.axx
+##
+## clear cache
+## .\AxCrypt.exe -t
+
+PTH = '"C:\Program Files\Axantum\AxCrypt\{}\"'
+AXE = '"C:\Program Files\Axantum\AxCrypt\AxCrypt.exe"'
+ADD = AXE + ' -k '
+CLR = AXE + ' -t'
+
+def decrypt(filename):
+    return AXE + ' -d ' + PTH.format(filename)
+ 
 def gen_words(word):
     built_list = [LEETTERS[w] for w in word]
     for pre in PREFIXES:
