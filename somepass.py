@@ -1,10 +1,15 @@
 import itertools
+import logging
 import os
+import time
 import signal
 import subprocess
 
 import psutil
 
+
+logfile = 'leetlog_' + str(int(time.time())) + '.log'
+logging.basicConfig(filename=logfile, filemode='w', level=logging.DEBUG)
 
 LEETTERS = {
     'a' : ['A', 'a', '4'],
@@ -67,8 +72,29 @@ def kill(proc_pid):
     process.kill()
 
 
-def decrypt(filename):
-    return AXE + ' -d ' + PTH.format(filename)
+def decrypt(filename, timeout, cnt):
+    cmd = AXE + ' -d ' + PTH.format(filename)
+    run_dec = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
+    try:
+        run_dec.wait(timeout=timeout)
+        msg = 'successful decryption at count %s' % cnt
+        return {'end': True, 'msg': msg}
+    except subprocess.TimeoutExpired:
+        logging.debug('timed out')
+        kill(run_dec.pid)
+        try:
+            os.system('taskkill /im AxCrypt.exe')
+        except:
+            pass
+        time.sleep(10)
+        clear_cache = subprocess.Popen(CLR, stdout=subprocess.PIPE, shell=True)
+        try:
+            clear_cache.wait(timeout=timeout)
+            msg = 'unable to decrypt at count %s' % cnt
+            return {'end': False, 'msg': msg}
+        except subprocess.TimeoutExpired:
+            msg = 'clear cache timeout, exiting at count %s' % cnt
+            return {'end': True, 'msg': msg}
 
  
 def gen_words(word):
@@ -81,26 +107,41 @@ def gen_words(word):
             yield pre + leet + pre
 
 
-def do_thing(word, filename, max_cache):
-    ck = subprocess.check_output(CLR, shell=True)
-    print(ck)
-    if ck:
-        print('there is?')
-    else:
-        print('ck none')
+def test_length(word, cnt):
+    g = gen_words(word)
+    c = 0
+    for w in g:
+        c+=1
+        if c % cnt == 0:
+            logging.debug(c)
+
+
+def gen_file(word):
+    g = gen_words(word)
     cnt = 0
-    ps = input('press key')
+    out_file = 'gen_list_' + str(int(time.time())) + '.txt'
+    with open(out_file, 'w') as f:
+        for w in g:
+            cnt+=1
+            f.write('{i}, {word}\n'.format(i=cnt, word=w))
+
+
+def do_thing(word, filename, max_cache=5000, timeout=60):
+    cnt = 0
+    ck = subprocess.check_output(CLR, shell=True)
+    stime = int(time.time())
+    if ck:
+        logging.debug('issue clearing cache')
+        return
     for pwd in gen_words(word):
         cnt += 1
-        print('ak')
         ak = subprocess.check_output(ADD + pwd, shell=True)
-        print('zerps: %s - %s' % (cnt, ak))
-	#if cnt % max_cache == 0:
-    print('running...')
-    run_dec = subprocess.Popen(decrypt(filename), stdout=subprocess.PIPE, shell=True)
-    try:
-        run_dec.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        print('timed out')
-        kill(run_dec.pid)
-
+        if cnt % max_cache == 0:
+            logging.debug('count = {c} check_output = {o}'.format(c=cnt, o=ak))
+            res = decrypt(filename, timeout, cnt)
+            logging.debug('msg: {}'.format(res['msg']))
+            if res['end']:
+                return
+    res = decrypt(filename, timeout, cnt)
+    logging.debug('msg: {}'.format(res['msg']))
+    return
